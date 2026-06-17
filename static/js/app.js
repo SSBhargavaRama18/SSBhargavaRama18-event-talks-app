@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // DOM Elements - Header
     const refreshBtn = document.getElementById('refresh-btn');
+    const exportCsvBtn = document.getElementById('export-csv-btn');
     const refreshSpinner = document.getElementById('refresh-spinner');
     const refreshIcon = document.getElementById('refresh-icon');
     const lastSyncTime = document.getElementById('last-sync-time');
@@ -49,6 +50,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // Event Listeners - Refresh
     refreshBtn.addEventListener('click', () => {
         fetchReleaseNotes(true);
+    });
+
+    // Event Listeners - Export CSV
+    exportCsvBtn.addEventListener('click', () => {
+        exportToCSV();
     });
 
     // Event Listeners - Search & Filter
@@ -127,6 +133,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             parseReleaseNotes();
             renderUpdatesTimeline();
+            exportCsvBtn.disabled = parsedUpdates.length === 0;
         } catch (error) {
             console.error('Error fetching release notes:', error);
             notesTimeline.innerHTML = `
@@ -138,6 +145,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <p>Failed to retrieve release notes from the server. Check your backend status.</p>
                 </div>
             `;
+            exportCsvBtn.disabled = true;
         } finally {
             setLoadingState(false);
         }
@@ -310,6 +318,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         ${update.bodyHtml}
                     </div>
                     <div class="update-footer">
+                        <button class="btn-copy-inline" aria-label="Copy to clipboard">
+                            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                            </svg>
+                            <span>Copy</span>
+                        </button>
                         <button class="btn-share-inline" aria-label="Share this update">
                             <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
                                 <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
@@ -318,6 +333,25 @@ document.addEventListener('DOMContentLoaded', () => {
                         </button>
                     </div>
                 `;
+
+                // Copy button click handler
+                const copyBtn = itemDiv.querySelector('.btn-copy-inline');
+                copyBtn.addEventListener('click', (e) => {
+                    e.stopPropagation(); // prevent card selection
+                    const textToCopy = `[BigQuery ${update.categoryLabel}] ${update.date}: ${update.textSummary.trim()} (Ref: ${update.link})`;
+                    navigator.clipboard.writeText(textToCopy).then(() => {
+                        const btnSpan = copyBtn.querySelector('span');
+                        const originalText = btnSpan.textContent;
+                        btnSpan.textContent = 'Copied!';
+                        copyBtn.classList.add('copied');
+                        setTimeout(() => {
+                            btnSpan.textContent = originalText;
+                            copyBtn.classList.remove('copied');
+                        }, 1500);
+                    }).catch(err => {
+                        console.error('Failed to copy text: ', err);
+                    });
+                });
 
                 // Item Click selects update
                 itemDiv.addEventListener('click', (e) => {
@@ -600,5 +634,64 @@ document.addEventListener('DOMContentLoaded', () => {
 
             socialFeedList.appendChild(tweetDiv);
         });
+    }
+
+    // Export current filtered release notes to a CSV document
+    function exportToCSV() {
+        const searchQuery = searchInput.value.trim().toLowerCase();
+        const activeCategoryChip = document.querySelector('.filter-chip.active');
+        const activeCategory = activeCategoryChip ? activeCategoryChip.dataset.category : 'all';
+
+        // Form filtered set matching active state
+        const filtered = parsedUpdates.filter(update => {
+            let categoryMatch = false;
+            if (activeCategory === 'all') {
+                categoryMatch = true;
+            } else if (activeCategory === 'feature' && update.category.includes('feature')) {
+                categoryMatch = true;
+            } else if (activeCategory === 'announcement' && (update.category.includes('announcement') || update.category.includes('deprecation'))) {
+                categoryMatch = true;
+            } else if (activeCategory === 'issue' && (update.category.includes('issue') || update.category.includes('fix') || update.category.includes('known issue'))) {
+                categoryMatch = true;
+            }
+
+            let searchMatch = true;
+            if (searchQuery) {
+                const titleText = update.title.toLowerCase();
+                const contentText = update.textSummary.toLowerCase();
+                const catText = update.categoryLabel.toLowerCase();
+                searchMatch = titleText.includes(searchQuery) || contentText.includes(searchQuery) || catText.includes(searchQuery);
+            }
+
+            return categoryMatch && searchMatch;
+        });
+
+        if (filtered.length === 0) {
+            alert("No data available to export.");
+            return;
+        }
+
+        const csvHeaders = ["Date", "Category", "Official Link", "Description"];
+        const csvRows = [csvHeaders.join(",")];
+
+        filtered.forEach(item => {
+            const date = item.date.replace(/"/g, '""');
+            const category = item.categoryLabel.replace(/"/g, '""');
+            const link = item.link.replace(/"/g, '""');
+            const desc = item.textSummary.replace(/\s+/g, ' ').replace(/"/g, '""').trim();
+            csvRows.push(`"${date}","${category}","${link}","${desc}"`);
+        });
+
+        const csvContent = csvRows.join("\n");
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", `bigquery_release_notes_${new Date().toISOString().slice(0, 10)}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     }
 });

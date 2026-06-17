@@ -578,9 +578,10 @@ body {
     margin-top: 1rem;
     border-top: 1px solid rgba(255, 255, 255, 0.03);
     padding-top: 0.75rem;
+    gap: 0.5rem;
 }
 
-.btn-share-inline {
+.btn-share-inline, .btn-copy-inline {
     display: inline-flex;
     align-items: center;
     gap: 0.4rem;
@@ -599,6 +600,13 @@ body {
     background: #1d9bf0;
     border-color: #1d9bf0;
     color: white;
+}
+
+.btn-copy-inline:hover, .btn-copy-inline.copied {
+    background: #10b981;
+    border-color: #10b981;
+    color: white;
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.2);
 }
 
 .update-item.selected .btn-share-inline {
