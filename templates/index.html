@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BigQuery Release Notes Hub</title>
+    <meta name="description" content="A premium dashboard to browse Google Cloud BigQuery release notes and instantly share updates to Twitter / X.">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <div class="stars-bg"></div>
+    <div class="glow-orb orb-1"></div>
+    <div class="glow-orb orb-2"></div>
+
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-logo">
+                <div class="logo-icon">
+                    <svg viewBox="0 0 24 24" width="28" height="28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <div class="logo-text">
+                    <h1>BigQuery</h1>
+                    <span>Release Hub</span>
+                </div>
+            </div>
+            
+            <div class="header-actions">
+                <div class="sync-status">
+                    <span id="fallback-badge" class="badge badge-warning hidden">Offline Cache</span>
+                    <span class="status-dot online"></span>
+                    <span id="last-sync-time">Last synced: Never</span>
+                </div>
+                <button id="refresh-btn" class="btn btn-primary" aria-label="Refresh Release Notes">
+                    <svg class="spinner-icon hidden" id="refresh-spinner" viewBox="0 0 24 24" width="18" height="18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-dasharray="32" stroke-linecap="round"/>
+                    </svg>
+                    <svg class="refresh-icon" id="refresh-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+                    </svg>
+                    <span>Refresh</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Layout -->
+        <main class="dashboard-grid">
+            
+            <!-- Left Side: Release Notes Feed -->
+            <section class="feed-section glass-card" aria-labelledby="feed-heading">
+                <div class="section-header">
+                    <h2 id="feed-heading">Latest Updates</h2>
+                    <p class="section-subtitle">Real-time official BigQuery release notes</p>
+                </div>
+
+                <!-- Search & Filters -->
+                <div class="filter-bar">
+                    <div class="search-input-wrapper">
+                        <svg class="search-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                        </svg>
+                        <input type="text" id="search-input" placeholder="Search updates..." aria-label="Search release notes">
+                        <button id="clear-search" class="clear-btn hidden" aria-label="Clear search">&times;</button>
+                    </div>
+                    
+                    <div class="category-filters" role="group" aria-label="Filter categories">
+                        <button class="filter-chip active" data-category="all">All</button>
+                        <button class="filter-chip" data-category="feature">
+                            <span class="dot feat"></span>Features
+                        </button>
+                        <button class="filter-chip" data-category="announcement">
+                            <span class="dot ann"></span>Announcements
+                        </button>
+                        <button class="filter-chip" data-category="issue">
+                            <span class="dot iss"></span>Issues/Fixes
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Timeline / Notes List -->
+                <div class="notes-timeline" id="notes-timeline">
+                    <!-- Dynamic Notes Loaded Here -->
+                    <div class="loading-state">
+                        <svg class="spinner-large" viewBox="0 0 24 24" width="48" height="48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-dasharray="45" stroke-linecap="round"/>
+                        </svg>
+                        <p>Fetching the latest BigQuery release notes...</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Right Side: Composer & Mock X Feed -->
+            <div class="sidebar-section">
+                
+                <!-- X Tweet Composer -->
+                <section class="composer-section glass-card" aria-labelledby="composer-heading">
+                    <div class="section-header flex-header">
+                        <h2 id="composer-heading">X Composer</h2>
+                        <span class="brand-x-logo">
+                            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                            </svg>
+                        </span>
+                    </div>
+
+                    <div class="composer-body">
+                        <!-- Select Prompt -->
+                        <div class="selection-prompt-banner" id="selection-prompt">
+                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+                            </svg>
+                            <span>Click <strong class="highlight">Share</strong> on any release note to load and format it here.</span>
+                        </div>
+
+                        <!-- Tweet Content Textarea -->
+                        <div class="textarea-wrapper">
+                            <label for="tweet-textarea" class="sr-only">Tweet Text</label>
+                            <textarea id="tweet-textarea" placeholder="Select a release note or start typing..." maxlength="280"></textarea>
+                            
+                            <!-- Quick Tones -->
+                            <div class="tone-picker" id="tone-picker">
+                                <span class="picker-label">Tone:</span>
+                                <button class="tone-btn active" data-tone="technical">Technical 🤖</button>
+                                <button class="tone-btn" data-tone="excited">Excited 🎉</button>
+                                <button class="tone-btn" data-tone="punchy">Punchy ⚡</button>
+                                <button class="tone-btn" data-tone="formal">Formal 💼</button>
+                            </div>
+                        </div>
+
+                        <!-- Composer Actions & Progress -->
+                        <div class="composer-footer">
+                            <div class="char-counter-wrapper">
+                                <svg class="progress-ring" width="36" height="36">
+                                    <circle class="progress-ring-bg" stroke="var(--border-color)" stroke-width="3" fill="transparent" r="14" cx="18" cy="18"/>
+                                    <circle id="char-progress" class="progress-ring-circle" stroke="var(--primary-color)" stroke-width="3" fill="transparent" r="14" cx="18" cy="18"/>
+                                </svg>
+                                <span id="char-count">280</span>
+                            </div>
+                            
+                            <div class="button-group">
+                                <button id="simulate-tweet-btn" class="btn btn-secondary" disabled>Simulate</button>
+                                <button id="post-x-btn" class="btn btn-primary" disabled>
+                                    <span>Post on X</span>
+                                    <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+                                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Live Preview Card -->
+                    <div class="tweet-preview-container">
+                        <div class="preview-title">Live Preview</div>
+                        <div class="x-tweet-card">
+                            <div class="tweet-header">
+                                <div class="user-avatar-placeholder">BQ</div>
+                                <div class="user-info">
+                                    <span class="user-display-name">Google Cloud Tracker</span>
+                                    <span class="user-handle">@GCPReleaseNotes</span>
+                                </div>
+                                <div class="x-logo-small">
+                                    <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+                                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="tweet-body" id="tweet-preview-text">
+                                Select a release note or start typing to preview your post...
+                            </div>
+                            <!-- Mock Card Preview -->
+                            <div class="tweet-link-card hidden" id="tweet-preview-link-card">
+                                <div class="card-img-mock">
+                                    <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                        <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+                                        <line x1="8" y1="21" x2="16" y2="21"/>
+                                        <line x1="12" y1="17" x2="12" y2="21"/>
+                                    </svg>
+                                    <span>BigQuery Update</span>
+                                </div>
+                                <div class="card-content-mock">
+                                    <div class="card-domain">cloud.google.com</div>
+                                    <div class="card-title-mock" id="tweet-preview-card-title">BigQuery Release Notes</div>
+                                    <div class="card-desc-mock">Official release notes and announcements for Google Cloud BigQuery.</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Simulated Twitter Feed -->
+                <section class="social-feed-section glass-card" aria-labelledby="social-heading">
+                    <div class="section-header">
+                        <h2 id="social-heading">Simulated X Feed</h2>
+                        <p class="section-subtitle">Interact with simulated community updates</p>
+                    </div>
+                    
+                    <div class="social-feed-list" id="social-feed-list">
+                        <!-- Simulated Tweets dynamically injected here -->
+                    </div>
+                </section>
+
+            </div>
+        </main>
+    </div>
+</body>
+</html>
