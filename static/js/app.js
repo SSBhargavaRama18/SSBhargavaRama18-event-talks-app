@@ -9,6 +9,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // DOM Elements - Header
     const refreshBtn = document.getElementById('refresh-btn');
     const exportCsvBtn = document.getElementById('export-csv-btn');
+    const themeToggleBtn = document.getElementById('theme-toggle');
+    const themeIconSun = document.getElementById('theme-icon-sun');
+    const themeIconMoon = document.getElementById('theme-icon-moon');
     const refreshSpinner = document.getElementById('refresh-spinner');
     const refreshIcon = document.getElementById('refresh-icon');
     const lastSyncTime = document.getElementById('last-sync-time');
@@ -43,6 +46,18 @@ document.addEventListener('DOMContentLoaded', () => {
     charProgressCircle.style.strokeDasharray = `${CIRCUMFERENCE} ${CIRCUMFERENCE}`;
     charProgressCircle.style.strokeDashoffset = CIRCUMFERENCE;
 
+    // Initialize Theme
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    if (savedTheme === 'light') {
+        document.documentElement.setAttribute('data-theme', 'light');
+        themeIconSun.classList.add('hidden');
+        themeIconMoon.classList.remove('hidden');
+    } else {
+        document.documentElement.removeAttribute('data-theme');
+        themeIconSun.classList.remove('hidden');
+        themeIconMoon.classList.add('hidden');
+    }
+
     // Initialize
     fetchReleaseNotes(false);
     fetchSimulatedTweets();
@@ -55,6 +70,22 @@ document.addEventListener('DOMContentLoaded', () => {
     // Event Listeners - Export CSV
     exportCsvBtn.addEventListener('click', () => {
         exportToCSV();
+    });
+
+    // Event Listeners - Theme Toggle
+    themeToggleBtn.addEventListener('click', () => {
+        const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+        if (isLight) {
+            document.documentElement.removeAttribute('data-theme');
+            themeIconSun.classList.remove('hidden');
+            themeIconMoon.classList.add('hidden');
+            localStorage.setItem('theme', 'dark');
+        } else {
+            document.documentElement.setAttribute('data-theme', 'light');
+            themeIconSun.classList.add('hidden');
+            themeIconMoon.classList.remove('hidden');
+            localStorage.setItem('theme', 'light');
+        }
     });
 
     // Event Listeners - Search & Filter
